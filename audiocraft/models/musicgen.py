@@ -37,7 +37,7 @@ class MusicGen:
         lm (LMModel): Language model over discrete representations.
     """
     def __init__(self, name: str, compression_model: CompressionModel, lm: LMModel,
-                 max_duration: float = 30):
+                 max_duration: float = 10):#30
         self.name = name
         self.compression_model = compression_model
         self.lm = lm
@@ -104,8 +104,9 @@ class MusicGen:
 
     def set_generation_params(self, use_sampling: bool = True, top_k: int = 250,
                               top_p: float = 0.0, temperature: float = 1.0,
-                              duration: float = 30.0, cfg_coef: float = 3.0,
-                              two_step_cfg: bool = False, extend_stride: float = 18):
+                              duration: float = 5.0, #30.0
+                              cfg_coef: float = 3.0,
+                              two_step_cfg: bool = False, extend_stride: float = 0.5):#18
         """Set the generation parameters for MusicGen.
 
         Args:
@@ -321,10 +322,16 @@ class MusicGen:
 
             stride_tokens = int(self.frame_rate * self.extend_stride)
 
+            import time
+            time_start = time.time()
+            time_last_audio_output = time_start - 1
+            time_last_output = time_start - 1
+
             while current_gen_offset + prompt_length < total_gen_len:
                 time_offset = current_gen_offset / self.frame_rate
                 chunk_duration = min(self.duration - time_offset, self.max_duration)
                 max_gen_len = int(chunk_duration * self.frame_rate)
+                print('current_gen_offset: '+str(current_gen_offset)+', prompt_length: '+str(prompt_length)+', total_gen_len: '+str(total_gen_len)+', time_offset: '+str(time_offset)+', chunk_duration: '+str(chunk_duration)+', max_gen_len: '+str(max_gen_len))
                 for attr, ref_wav in zip(attributes, ref_wavs):
                     wav_length = ref_wav.length.item()
                     if wav_length == 0:
@@ -351,6 +358,71 @@ class MusicGen:
                 prompt_tokens = gen_tokens[:, :, stride_tokens:]
                 prompt_length = prompt_tokens.shape[-1]
                 current_gen_offset += stride_tokens
+                
+#                print('gen_tokens: '+str(gen_tokens)+', prompt_tokens: '+str(prompt_tokens)+', stride_tokens: '+str(stride_tokens))
+                sampler_tokens = gen_tokens[:, :, :stride_tokens]
+                assert sampler_tokens.dim() == 3
+                with torch.no_grad():
+                  gen_audio_part = self.compression_model.decode(sampler_tokens, None)
+                output = gen_audio_part.detach().cpu().float()
+
+#                self.audio_data.append(output[0])
+#                self.audio_data_new = True
+
+#                if False:
+                if True:
+                 from tempfile import NamedTemporaryFile
+                 with NamedTemporaryFile("wb", suffix=".wav", delete=False) as file:
+        
+#            print(output)
+#            output = julius.resample_frac(output, int(MODEL.sample_rate), int(MODEL.sample_rate*dividier))
+
+                  from audiocraft.data.audio import audio_write
+#                  print(output)
+
+#                  audio_tmp = self.pool.submit(audio_write, file.name, output[0],
+#                    int(self.sample_rate/self.divider), strategy="loudness",
+#                    loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
+                  audio_write(
+                    file.name, output[0], int(self.sample_rate/self.divider), normalize=False,
+                    add_suffix=False)
+#                  audio_write(
+#                    file.name, output[0], int(self.sample_rate/self.divider), strategy="loudness",
+#                    loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
+
+                if False:
+#                if True:
+                  import time
+                  time_audio_output = time.time()
+                  while(time_audio_output - time_last_audio_output < self.extend_stride * self.divider):
+                    time_audio_output = time.time()
+#                  while(self.audio_tmp_new):
+                    time.sleep(0.01)
+#                    self.audio_tmp_new = self.audio_tmp_new
+#                  self.audio_tmp.append(audio_tmp)
+                  print(time.ctime())
+                  self.audio_tmp.append(file.name)
+                  self.audio_tmp_new = True
+                  time_last_audio_output = time_audio_output
+
+#                if False:
+                if True:
+                  tmp = self.pool.submit(self.make_waveform, file.name)
+#                  print(tmp)
+                  import time
+                  time_output = time.time()
+                  while((time_output - time_last_output < self.extend_stride * self.divider) and not (tmp.done()) ):
+                    time_output = time.time()
+#                  while(self.audio_tmp_new):
+                    time.sleep(0.01)
+#                    self.audio_tmp_new = self.audio_tmp_new
+#                  self.audio_tmp.append(audio_tmp)
+                  print(time.ctime())
+                  self.tmp.append(tmp)
+                  self.tmp_new = True
+#                  self.tmp.append(file.name)
+#                  self.tmp_new = True
+                  time_last_output = time_output
 
             gen_tokens = torch.cat(all_tokens, dim=-1)
 
