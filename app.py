@@ -22,6 +22,7 @@ from audiocraft.data.audio_utils import convert_audio
 from audiocraft.data.audio import audio_write
 from audiocraft.models import MusicGen
 
+import julius
 
 MODEL = None  # Last used model
 IS_BATCHED = "facebook/MusicGen" in os.environ.get('SPACE_ID', '')
@@ -59,7 +60,6 @@ def make_waveform(*args, **kwargs):
         print("Make a video took", time.time() - be)
         return out
 
-
 def load_model(version='melody'):
     global MODEL
     print("Loading model", version)
@@ -67,8 +67,8 @@ def load_model(version='melody'):
         MODEL = MusicGen.get_pretrained(version)
 
 
-def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
-    MODEL.set_generation_params(duration=duration, **gen_kwargs)
+def _do_predictions(texts, melodies, duration, divider, sampler, progress=False, **gen_kwargs):
+    MODEL.set_generation_params(duration=duration/divider, **gen_kwargs)
     print("new batch", len(texts), texts, [None if m is None else (m[0], m[1].shape) for m in melodies])
     be = time.time()
     processed_melodies = []
@@ -93,14 +93,32 @@ def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
             progress=progress,
         )
     else:
+        print('MODEL.generate')
+        MODEL.make_waveform = make_waveform
+        MODEL.divider = divider
+        MODEL.pool = pool
+        MODEL.sampler = sampler
+        MODEL.tmp = []
+        MODEL.tmp_new = False
+        MODEL.audio_data = []
+        MODEL.audio_data_new = False
+        MODEL.audio_tmp = []
+        MODEL.audio_tmp_new = False
+            
         outputs = MODEL.generate(texts, progress=progress)
 
     outputs = outputs.detach().cpu().float()
     out_files = []
     for output in outputs:
         with NamedTemporaryFile("wb", suffix=".wav", delete=False) as file:
+        
+#            print(output)
+#            output = julius.resample_frac(output, int(MODEL.sample_rate), int(MODEL.sample_rate*dividier))
+        
+
+            print(output)
             audio_write(
-                file.name, output, MODEL.sample_rate, strategy="loudness",
+                file.name, output, int(MODEL.sample_rate/divider), strategy="loudness",
                 loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
             out_files.append(pool.submit(make_waveform, file.name))
     res = [out_file.result() for out_file in out_files]
@@ -116,7 +134,7 @@ def predict_batched(texts, melodies):
     return [res]
 
 
-def predict_full(model, text, melody, duration, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
+def predict_full(model, text, melody, duration, dividier, sampler, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
     global INTERRUPTING
     INTERRUPTING = False
     if temperature < 0:
@@ -136,10 +154,89 @@ def predict_full(model, text, melody, duration, topk, topp, temperature, cfg_coe
     MODEL.set_custom_progress_callback(_progress)
 
     outs = _do_predictions(
-        [text], [melody], duration, progress=True,
+        [text], [melody], duration, dividier, sampler, progress=True,
         top_k=topk, top_p=topp, temperature=temperature, cfg_coef=cfg_coef)
+    print(outs[0])
     return outs[0]
 
+def audio_stream(mic):
+    if not (mic is None):
+     print('mic: '+str(mic))
+#     yield mic
+     return mic
+     
+     if not (MODEL is None):
+      if MODEL.audio_data_new:
+          MODEL.audio_data_new = False
+#          audio_data = b""
+#          audio_data += MODEL.audio_data[len(MODEL.audio_data)-1]
+          print('audio_data: '+str(audio_data))
+          audio_data = MODEL.audio_data[len(MODEL.audio_data)-1]
+#          yield mic
+#          return audio_data
+def check_tmp1(sampler):
+    if not (MODEL is None):
+      if len(MODEL.tmp)>0:
+        while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==0)):
+          time.sleep(0.01)
+        if True:
+          tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
+          MODEL.tmp_new = False
+          return tmp_result
+def check_tmp2(sampler):
+    if not (MODEL is None):
+      if len(MODEL.tmp)>0:
+        while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==1)):
+          time.sleep(0.01)
+        if True:
+          tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
+          MODEL.tmp_new = False
+          return tmp_result
+def check_tmp3(sampler):
+    if not (MODEL is None):
+      if len(MODEL.tmp)>0:
+        while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==2)):
+          time.sleep(0.01)
+        if True:
+          tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
+          MODEL.tmp_new = False
+          return tmp_result
+def check_audio_tmp1():
+    if not (MODEL is None):
+      if len(MODEL.audio_tmp)>0:
+        while not(MODEL.audio_tmp_new and ((len(MODEL.audio_tmp))%3==0)):
+          time.sleep(0.01)
+        if True:
+#      if MODEL.audio_tmp_new and ((len(MODEL.audio_tmp))%3==0):
+          audio_tmp_result = MODEL.audio_tmp[len(MODEL.audio_tmp)-1]
+#          MODEL.audio_tmp_result = MODEL.audio_tmp[len(MODEL.audio_tmp)-1].result()
+          MODEL.audio_tmp_new = False
+#          return MODEL.audio_tmp[len(MODEL.audio_tmp)-1]
+          return audio_tmp_result
+def check_audio_tmp2():
+    if not (MODEL is None):
+      if len(MODEL.audio_tmp)>0:
+        while not(MODEL.audio_tmp_new and ((len(MODEL.audio_tmp))%3==1)):
+          time.sleep(0.01)
+        if True:
+#      if MODEL.audio_tmp_new and ((len(MODEL.audio_tmp))%3==1):
+          audio_tmp_result = MODEL.audio_tmp[len(MODEL.audio_tmp)-1]
+#          MODEL.audio_tmp_result = MODEL.audio_tmp[len(MODEL.audio_tmp)-1].result()
+          MODEL.audio_tmp_new = False
+#          return MODEL.audio_tmp[len(MODEL.audio_tmp)-1]
+          return audio_tmp_result
+def check_audio_tmp3():
+    if not (MODEL is None):
+      if len(MODEL.audio_tmp)>0:
+        while not(MODEL.audio_tmp_new and ((len(MODEL.audio_tmp))%3==2)):
+          time.sleep(0.01)
+        if True:
+#      if MODEL.audio_tmp_new and ((len(MODEL.audio_tmp))%3==2):
+          audio_tmp_result = MODEL.audio_tmp[len(MODEL.audio_tmp)-1]
+#          MODEL.audio_tmp_result = MODEL.audio_tmp[len(MODEL.audio_tmp)-1].result()
+          MODEL.audio_tmp_new = False
+#          return MODEL.audio_tmp[len(MODEL.audio_tmp)-1]
+          return audio_tmp_result
 
 def ui_full(launch_kwargs):
     with gr.Blocks() as interface:
@@ -153,16 +250,20 @@ def ui_full(launch_kwargs):
         with gr.Row():
             with gr.Column():
                 with gr.Row():
-                    text = gr.Text(label="Input Text", interactive=True)
+                    text = gr.Text(label="Input Text", value="psytrance", interactive=True)
                     melody = gr.Audio(source="upload", type="numpy", label="Melody Condition (optional)", interactive=True)
                 with gr.Row():
                     submit = gr.Button("Submit")
                     # Adapted from https://github.com/rkfg/audiocraft/blob/long/app.py, MIT license.
                     _ = gr.Button("Interrupt").click(fn=interrupt, queue=False)
                 with gr.Row():
-                    model = gr.Radio(["melody", "medium", "small", "large"], label="Model", value="melody", interactive=True)
+                    model = gr.Radio(["melody", "medium", "small", "large"], label="Model", value="small", interactive=True)
                 with gr.Row():
-                    duration = gr.Slider(minimum=1, maximum=120, value=10, label="Duration", interactive=True)
+                    duration = gr.Slider(minimum=1, maximum=120000, value=100, label="Duration", interactive=True)
+                with gr.Row():
+                    divider = gr.Slider(minimum=1, maximum=120, value=2, step=0.1, label="Divider", interactive=True)
+                with gr.Row():
+                    sampler = gr.Slider(minimum=1, maximum=3, value=3, step=1, label="Sampler", interactive=False)
                 with gr.Row():
                     topk = gr.Number(label="Top-k", value=250, interactive=True)
                     topp = gr.Number(label="Top-p", value=0, interactive=True)
@@ -170,7 +271,34 @@ def ui_full(launch_kwargs):
                     cfg_coef = gr.Number(label="Classifier Free Guidance", value=3.0, interactive=True)
             with gr.Column():
                 output = gr.Video(label="Generated Music")
-        submit.click(predict_full, inputs=[model, text, melody, duration, topk, topp, temperature, cfg_coef], outputs=[output])
+#                output = gr.Video(label="Generated Music (updates every second)")#, autoplay=True)
+                output1 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
+                output2 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
+                output3 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
+#                output1 = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
+#                output2 = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
+#                output3 = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
+#                output_audio = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
+#                output1 = gr.Audio(label="Generated Music (streaming)")
+#                input1 = gr.Audio(source="microphone", type="numpy", streaming=True)
+
+                
+        submit.click(predict_full, inputs=[model, text, melody, duration, divider, sampler, topk, topp, temperature, cfg_coef], outputs=[output])
+        
+#        output_audio = interface.load(check_audio_tmp, None, outputs=[output_audio], every=1)
+#        input1.stream(audio_stream, inputs=[input1], outputs=[output1])
+#        output1 = interface.load(audio_stream, inputs=[input1], outputs=[output1], live=True)
+#        output1 = interface.load(check_tmp1, None, outputs=[output1], every=1.5)
+        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05)
+        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05)
+        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05)
+#        output1 = interface.load(check_audio_tmp1, None, outputs=[output1], every=0.1)
+#        output2 = interface.load(check_audio_tmp2, None, outputs=[output2], every=0.1)
+#        output3 = interface.load(check_audio_tmp3, None, outputs=[output3], every=0.1)
+#        output2 = interface.load(predict_full, inputs=[model, text, melody, duration, divider, sampler, topk, topp, temperature, cfg_coef], outputs=[output], every=0.01)
+        #, _js=autoplay_audio
+#        period1.change(predict_full, inputs=[model, text, melody, duration, divider, topk, topp, temperature, cfg_coef], outputs=[plot1], every=1, cancels=[dep1])
+
         gr.Examples(
             fn=predict_full,
             examples=[
@@ -231,6 +359,7 @@ def ui_full(launch_kwargs):
             """
         )
 
+#        interface.queue(concurrency_count=10).launch(**launch_kwargs)
         interface.queue().launch(**launch_kwargs)
 
 
