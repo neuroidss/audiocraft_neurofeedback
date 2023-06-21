@@ -67,8 +67,8 @@ def load_model(version='melody'):
         MODEL = MusicGen.get_pretrained(version)
 
 
-def _do_predictions(texts, melodies, duration, divider, sampler, progress=False, **gen_kwargs):
-    MODEL.set_generation_params(duration=duration/divider, **gen_kwargs)
+def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
+    MODEL.set_generation_params(duration=duration/MODEL.divider, **gen_kwargs)
     print("new batch", len(texts), texts, [None if m is None else (m[0], m[1].shape) for m in melodies])
     be = time.time()
     processed_melodies = []
@@ -85,6 +85,8 @@ def _do_predictions(texts, melodies, duration, divider, sampler, progress=False,
             melody = convert_audio(melody, sr, target_sr, target_ac)
             processed_melodies.append(melody)
 
+#    print('MODEL.generate')
+
     if any(m is not None for m in processed_melodies):
         outputs = MODEL.generate_with_chroma(
             descriptions=texts,
@@ -93,18 +95,6 @@ def _do_predictions(texts, melodies, duration, divider, sampler, progress=False,
             progress=progress,
         )
     else:
-        print('MODEL.generate')
-        MODEL.make_waveform = make_waveform
-        MODEL.divider = divider
-        MODEL.pool = pool
-        MODEL.sampler = sampler
-        MODEL.tmp = []
-        MODEL.tmp_new = False
-        MODEL.audio_data = []
-        MODEL.audio_data_new = False
-        MODEL.audio_tmp = []
-        MODEL.audio_tmp_new = False
-            
         outputs = MODEL.generate(texts, progress=progress)
 
     outputs = outputs.detach().cpu().float()
@@ -118,7 +108,7 @@ def _do_predictions(texts, melodies, duration, divider, sampler, progress=False,
 
             print(output)
             audio_write(
-                file.name, output, int(MODEL.sample_rate/divider), strategy="loudness",
+                file.name, output, int(MODEL.sample_rate/MODEL.divider), strategy="loudness",
                 loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
             out_files.append(pool.submit(make_waveform, file.name))
     res = [out_file.result() for out_file in out_files]
@@ -134,7 +124,7 @@ def predict_batched(texts, melodies):
     return [res]
 
 
-def predict_full(model, text, melody, duration, dividier, sampler, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
+def predict_full(model, text, melody, duration, divider, sampler, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
     global INTERRUPTING
     INTERRUPTING = False
     if temperature < 0:
@@ -147,6 +137,17 @@ def predict_full(model, text, melody, duration, dividier, sampler, topk, topp, t
     topk = int(topk)
     load_model(model)
 
+    MODEL.make_waveform = make_waveform
+    MODEL.divider = divider
+    MODEL.pool = pool
+    MODEL.sampler = sampler
+    MODEL.tmp = []
+    MODEL.tmp_new = False
+    MODEL.audio_data = []
+    MODEL.audio_data_new = False
+    MODEL.audio_tmp = []
+    MODEL.audio_tmp_new = False
+
     def _progress(generated, to_generate):
         progress((generated, to_generate))
         if INTERRUPTING:
@@ -154,7 +155,7 @@ def predict_full(model, text, melody, duration, dividier, sampler, topk, topp, t
     MODEL.set_custom_progress_callback(_progress)
 
     outs = _do_predictions(
-        [text], [melody], duration, dividier, sampler, progress=True,
+        [text], [melody], duration, progress=True,
         top_k=topk, top_p=topp, temperature=temperature, cfg_coef=cfg_coef)
     print(outs[0])
     return outs[0]
@@ -176,6 +177,7 @@ def audio_stream(mic):
 #          return audio_data
 def check_tmp1(sampler):
     if not (MODEL is None):
+     if hasattr(MODEL, "tmp"):
       if len(MODEL.tmp)>0:
         while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==0)):
           time.sleep(0.01)
@@ -185,6 +187,7 @@ def check_tmp1(sampler):
           return tmp_result
 def check_tmp2(sampler):
     if not (MODEL is None):
+     if hasattr(MODEL, "tmp"):
       if len(MODEL.tmp)>0:
         while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==1)):
           time.sleep(0.01)
@@ -194,6 +197,7 @@ def check_tmp2(sampler):
           return tmp_result
 def check_tmp3(sampler):
     if not (MODEL is None):
+     if hasattr(MODEL, "tmp"):
       if len(MODEL.tmp)>0:
         while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==2)):
           time.sleep(0.01)
@@ -264,6 +268,8 @@ def ui_full(launch_kwargs):
                     divider = gr.Slider(minimum=1, maximum=120, value=2, step=0.1, label="Divider", interactive=True)
                 with gr.Row():
                     sampler = gr.Slider(minimum=1, maximum=3, value=3, step=1, label="Sampler", interactive=False)
+                with gr.Row():
+                    coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
                 with gr.Row():
                     topk = gr.Number(label="Top-k", value=250, interactive=True)
                     topp = gr.Number(label="Top-p", value=0, interactive=True)
