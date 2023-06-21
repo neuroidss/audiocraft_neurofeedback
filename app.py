@@ -82,7 +82,7 @@ def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
             if melody.dim() == 1:
                 melody = melody[None]
             melody = melody[..., :int(sr * duration)]
-            melody = convert_audio(melody, sr/MODEL.divider, target_sr, target_ac)
+            melody = convert_audio(melody, sr*MODEL.divider, target_sr, target_ac)
             processed_melodies.append(melody)
 
 #    print('MODEL.generate')
