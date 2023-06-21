@@ -82,7 +82,7 @@ def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
             if melody.dim() == 1:
                 melody = melody[None]
             melody = melody[..., :int(sr * duration)]
-            melody = convert_audio(melody, sr, target_sr, target_ac)
+            melody = convert_audio(melody, sr/MODEL.divider, target_sr, target_ac)
             processed_melodies.append(melody)
 
 #    print('MODEL.generate')
@@ -179,6 +179,7 @@ def check_tmp1(sampler):
     if not (MODEL is None):
      if hasattr(MODEL, "tmp"):
       if len(MODEL.tmp)>0:
+       if hasattr(MODEL, "tmp_new"):
         while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==0)):
           time.sleep(0.01)
         if True:
@@ -189,6 +190,7 @@ def check_tmp2(sampler):
     if not (MODEL is None):
      if hasattr(MODEL, "tmp"):
       if len(MODEL.tmp)>0:
+       if hasattr(MODEL, "tmp_new"):
         while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==1)):
           time.sleep(0.01)
         if True:
@@ -199,6 +201,7 @@ def check_tmp3(sampler):
     if not (MODEL is None):
      if hasattr(MODEL, "tmp"):
       if len(MODEL.tmp)>0:
+       if hasattr(MODEL, "tmp_new"):
         while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==2)):
           time.sleep(0.01)
         if True:
