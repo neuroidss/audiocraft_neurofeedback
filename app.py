@@ -68,7 +68,7 @@ def load_model(version='melody'):
 
 
 def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
-    MODEL.set_generation_params(duration=duration/MODEL.divider, **gen_kwargs)
+    MODEL.set_generation_params(duration=duration/MODEL.divider, extend_stride = MODEL.extend_stride, **gen_kwargs)
     print("new batch", len(texts), texts, [None if m is None else (m[0], m[1].shape) for m in melodies])
     be = time.time()
     processed_melodies = []
@@ -124,7 +124,7 @@ def predict_batched(texts, melodies):
     return [res]
 
 
-def predict_full(model, text, melody, duration, divider, sampler, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
+def predict_full(model, text, melody, duration, divider, sampler, max_duration, extend_stride, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
     global INTERRUPTING
     INTERRUPTING = False
     if temperature < 0:
@@ -141,6 +141,8 @@ def predict_full(model, text, melody, duration, divider, sampler, topk, topp, te
     MODEL.divider = divider
     MODEL.pool = pool
     MODEL.sampler = sampler
+    MODEL.max_duration = max_duration
+    MODEL.extend_stride = extend_stride
     MODEL.tmp = []
     MODEL.tmp_new = False
     MODEL.audio_data = []
@@ -178,9 +180,9 @@ def audio_stream(mic):
 def check_tmp1(sampler):
     if not (MODEL is None):
      if hasattr(MODEL, "tmp"):
-      if len(MODEL.tmp)>0:
+      if (len(MODEL.tmp)>0) and (MODEL.sampler>=1):
        if hasattr(MODEL, "tmp_new"):
-        while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==0)):
+        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==0)):
           time.sleep(0.01)
         if True:
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
@@ -189,9 +191,9 @@ def check_tmp1(sampler):
 def check_tmp2(sampler):
     if not (MODEL is None):
      if hasattr(MODEL, "tmp"):
-      if len(MODEL.tmp)>0:
+      if (len(MODEL.tmp)>0) and (MODEL.sampler>=2):
        if hasattr(MODEL, "tmp_new"):
-        while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==1)):
+        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==1)):
           time.sleep(0.01)
         if True:
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
@@ -200,9 +202,9 @@ def check_tmp2(sampler):
 def check_tmp3(sampler):
     if not (MODEL is None):
      if hasattr(MODEL, "tmp"):
-      if len(MODEL.tmp)>0:
+      if (len(MODEL.tmp)>0) and (MODEL.sampler>=3):
        if hasattr(MODEL, "tmp_new"):
-        while not(MODEL.tmp_new and ((len(MODEL.tmp))%sampler==2)):
+        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==2)):
           time.sleep(0.01)
         if True:
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
@@ -268,9 +270,13 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     duration = gr.Slider(minimum=1, maximum=120000, value=100, label="Duration", interactive=True)
                 with gr.Row():
-                    divider = gr.Slider(minimum=1, maximum=120, value=2, step=0.1, label="Divider", interactive=True)
+                    divider = gr.Slider(minimum=0.1, maximum=120, value=2, step=0.1, label="Divider", interactive=True)
                 with gr.Row():
-                    sampler = gr.Slider(minimum=1, maximum=3, value=3, step=1, label="Sampler", interactive=False)
+                    sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=True)
+                with gr.Row():
+                    max_duration = gr.Slider(minimum=1, maximum=30, value=3, step=1, label="max_duration", interactive=True)
+                with gr.Row():
+                    extend_stride = gr.Slider(minimum=0.1, maximum=18, value=0.5, step=0.1, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
                     coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
                 with gr.Row():
@@ -292,7 +298,7 @@ def ui_full(launch_kwargs):
 #                input1 = gr.Audio(source="microphone", type="numpy", streaming=True)
 
                 
-        submit.click(predict_full, inputs=[model, text, melody, duration, divider, sampler, topk, topp, temperature, cfg_coef], outputs=[output])
+        submit.click(predict_full, inputs=[model, text, melody, duration, divider, sampler, max_duration, extend_stride, topk, topp, temperature, cfg_coef], outputs=[output])
         
 #        output_audio = interface.load(check_audio_tmp, None, outputs=[output_audio], every=1)
 #        input1.stream(audio_stream, inputs=[input1], outputs=[output1])
