@@ -270,7 +270,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     duration = gr.Slider(minimum=1, maximum=120000, value=100, label="Duration", interactive=True)
                 with gr.Row():
-                    divider = gr.Slider(minimum=0.1, maximum=120, value=2, step=0.1, label="Divider", interactive=True)
+                    divider = gr.Slider(minimum=0.001, maximum=120, value=2, step=0.001, label="Divider", interactive=True)
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=True)
                 with gr.Row():
