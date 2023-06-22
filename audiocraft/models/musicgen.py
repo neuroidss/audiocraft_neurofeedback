@@ -37,7 +37,7 @@ class MusicGen:
         lm (LMModel): Language model over discrete representations.
     """
     def __init__(self, name: str, compression_model: CompressionModel, lm: LMModel,
-                 max_duration: float = 10):#30
+                 max_duration: float = 3):#30
         self.name = name
         self.compression_model = compression_model
         self.lm = lm
@@ -333,6 +333,7 @@ class MusicGen:
                 max_gen_len = int(chunk_duration * self.frame_rate)
                 print('current_gen_offset: '+str(current_gen_offset)+', prompt_length: '+str(prompt_length)+', total_gen_len: '+str(total_gen_len)+', time_offset: '+str(time_offset)+', chunk_duration: '+str(chunk_duration)+', max_gen_len: '+str(max_gen_len))
                 for attr, ref_wav in zip(attributes, ref_wavs):
+                    print("attr: "+str(attr)+", ref_wav: "+str(ref_wav))
                     wav_length = ref_wav.length.item()
                     if wav_length == 0:
                         continue
@@ -370,7 +371,8 @@ class MusicGen:
 #                self.audio_data_new = True
 
 #                if False:
-                if True:
+                if (self.sampler>=1):
+#                if True:
                  from tempfile import NamedTemporaryFile
                  with NamedTemporaryFile("wb", suffix=".wav", delete=False) as file:
         
@@ -390,7 +392,7 @@ class MusicGen:
 #                    file.name, output[0], int(self.sample_rate/self.divider), strategy="loudness",
 #                    loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
 
-                if False:
+                 if False:
 #                if True:
                   import time
                   time_audio_output = time.time()
@@ -406,7 +408,7 @@ class MusicGen:
                   time_last_audio_output = time_audio_output
 
 #                if False:
-                if True:
+                 if True:
                   tmp = self.pool.submit(self.make_waveform, file.name)
 #                  print(tmp)
                   import time
