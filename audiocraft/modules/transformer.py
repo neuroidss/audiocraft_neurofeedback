@@ -26,6 +26,8 @@ from .rope import RotaryEmbedding
 from .streaming import StreamingModule
 
 _efficient_attention_backend: str = 'torch'
+#_efficient_attention_backend: str = 'xformers'
+
 
 
 def set_efficient_attention_backend(backend: str = 'torch'):
@@ -398,9 +400,33 @@ class StreamingMultiheadAttention(StreamingModule):
                     v = expand_repeated_kv(v, self.kv_repeat)
             if self.attention_as_float32:
                 q, k, v = [x.float() for x in [q, k, v]]
+#                print('q: '+str(q))
+#            print('q.shape: '+str(q.shape))
+#                print('k: '+str(k))
+#            print('k.shape: '+str(k.shape))
+#                print('v: '+str(v))
+#            print('v.shape: '+str(v.shape))
+#            print('attn_mask: '+str(attn_mask))
+#            if not (attn_mask is None):
+#              print('attn_mask.shape: '+str(attn_mask.shape))
+#            print('self.memory_efficient: '+str(self.memory_efficient))
             if self.memory_efficient:
                 p = self.dropout if self.training else 0
                 if _efficient_attention_backend == 'torch':
+#                  if False:
+                  if True:
+                    if attn_mask is not None:
+                      attn_mask = _coherence_attention_mask(q, k)
+                      x = torch.nn.functional.scaled_dot_product_attention(
+                        q, k, v, attn_mask, dropout_p=p)
+#                      print('attn_mask: '+str(attn_mask))
+#                      print('attn_mask.shape: '+str(attn_mask.shape))
+#                      x = torch.nn.functional.scaled_dot_product_attention(
+#                        q, k, v, is_causal=True, dropout_p=p)
+                    else:
+                      x = torch.nn.functional.scaled_dot_product_attention(
+                        q, k, v, is_causal=False, dropout_p=p)
+                  else:
                     x = torch.nn.functional.scaled_dot_product_attention(
                         q, k, v, is_causal=attn_mask is not None, dropout_p=p)
                 else:
@@ -440,6 +466,23 @@ class StreamingMultiheadAttention(StreamingModule):
             x = x.to(dtype)
 
         return x, None
+
+def _coherence_attention_mask(query: torch._C.Value, key: torch._C.Value
+) -> torch._C.Value:
+
+    L = query.shape[2]
+    S = key.shape[2]
+#    L = 400
+#    S = 400
+    mask = torch.ones(L, S, device=query.device, dtype=torch.bool).tril(diagonal=0)
+#    attn_mask = torch.ones(L, S, device=query.device, dtype=query.dtype).tril(diagonal=0)
+#    attn_mask = torch.zeros(L, S, device=query.device, dtype=query.dtype)
+#    attn_mask = torch.ones(L, S, device=query.device, dtype=query.dtype)
+    attn_mask = torch.rand(L, S, device=query.device, dtype=query.dtype)
+#    print('mask: '+str(mask))
+    attn_mask = attn_mask.masked_fill(mask==False, -float('inf'))
+        
+    return attn_mask
 
 
 class StreamingTransformerLayer(nn.TransformerEncoderLayer):
