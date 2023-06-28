@@ -351,6 +351,8 @@ class LMModel(StreamingModule):
             if condition_tensors:
                 # Preparing for CFG, predicting both conditional and unconditional logits.
                 sequence = torch.cat([sequence, sequence], dim=0)
+#            print('condition_tensors: '+str(condition_tensors))
+#            print('condition_tensors.shape: '+str(condition_tensors.shape))
             all_logits = model(
                 sequence,
                 conditions=[], condition_tensors=condition_tensors)
@@ -359,6 +361,9 @@ class LMModel(StreamingModule):
                 logits = uncond_logits + (cond_logits - uncond_logits) * cfg_coef
             else:
                 logits = all_logits
+
+#        print('logits: '+str(logits))
+#        print('logits.shape: '+str(logits.shape))
 
         logits = logits.permute(0, 1, 3, 2)  # [B, K, card, T]
         logits = logits[..., -1]  # [B x K x card]

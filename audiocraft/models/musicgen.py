@@ -351,6 +351,10 @@ class MusicGen:
                         ref_wav[0][:, positions % wav_length],
                         torch.full_like(ref_wav[1], wav_target_length))
                 with self.autocast:
+                    print('prompt_tokens: '+str(prompt_tokens))
+                    if not (prompt_tokens is None):
+                      print('prompt_tokens.shape: '+str(prompt_tokens.shape))
+                    print('attributes: '+str(attributes))
                     gen_tokens = self.lm.generate(
                         prompt_tokens, attributes,
                         callback=callback, max_gen_len=max_gen_len, **self.generation_params)
