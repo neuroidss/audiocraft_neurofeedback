@@ -296,7 +296,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=True)
                 with gr.Row():
-                    max_duration = gr.Slider(minimum=1, maximum=300, value=16, step=1, label="max_duration", interactive=True)
+                    max_duration = gr.Slider(minimum=1, maximum=300, value=8, step=1, label="max_duration", interactive=True)
                 with gr.Row():
                     extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1.6, step=0.1, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
