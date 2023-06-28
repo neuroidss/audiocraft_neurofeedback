@@ -24,6 +24,9 @@ from audiocraft.models import MusicGen
 
 import julius
 
+import torchaudio
+import math
+
 MODEL = None  # Last used model
 IS_BATCHED = "facebook/MusicGen" in os.environ.get('SPACE_ID', '')
 MAX_BATCH_SIZE = 12
@@ -50,7 +53,6 @@ def interrupt():
     global INTERRUPTING
     INTERRUPTING = True
 
-
 def make_waveform(*args, **kwargs):
     # Further remove some warnings.
     be = time.time()
@@ -65,6 +67,12 @@ def load_model(version='melody'):
     print("Loading model", version)
     if MODEL is None or MODEL.name != version:
         MODEL = MusicGen.get_pretrained(version)
+
+
+def update_coherence_json_click(coherence_json):
+    if not (MODEL is None):
+      MODEL.coherence_json = coherence_json
+      print("coherence_json: ", coherence_json)
 
 
 def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
@@ -82,6 +90,11 @@ def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
             if melody.dim() == 1:
                 melody = melody[None]
             melody = melody[..., :int(sr * duration)]
+            
+            
+            if MODEL.pitch_shift:
+              melody = torchaudio.functional.pitch_shift(waveform=melody, sample_rate=sr, n_steps=int(math.log2(MODEL.divider)*24), bins_per_octave=24, n_fft=512, win_length=None, hop_length=None, window=None)
+
             melody = convert_audio(melody, sr*MODEL.divider, target_sr, target_ac)
             processed_melodies.append(melody)
 
@@ -97,6 +110,7 @@ def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
     else:
         outputs = MODEL.generate(texts, progress=progress)
 
+            
     outputs = outputs.detach().cpu().float()
     out_files = []
     for output in outputs:
@@ -106,7 +120,12 @@ def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
 #            output = julius.resample_frac(output, int(MODEL.sample_rate), int(MODEL.sample_rate*dividier))
         
 
-            print(output)
+            if MODEL.pitch_shift:
+              print(output)
+              output = torchaudio.functional.pitch_shift(waveform=output, sample_rate=int(MODEL.sample_rate/MODEL.divider), n_steps=int(math.log2(MODEL.divider)*24), bins_per_octave=24, n_fft=512, win_length=None, hop_length=None, window=None)
+
+#            output = output.detach().cpu().float()
+
             audio_write(
                 file.name, output, int(MODEL.sample_rate/MODEL.divider), strategy="loudness",
                 loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
@@ -124,7 +143,7 @@ def predict_batched(texts, melodies):
     return [res]
 
 
-def predict_full(model, text, melody, duration, divider, sampler, max_duration, extend_stride, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
+def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, coherence_json, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
     global INTERRUPTING
     INTERRUPTING = False
     if temperature < 0:
@@ -139,10 +158,12 @@ def predict_full(model, text, melody, duration, divider, sampler, max_duration, 
 
     MODEL.make_waveform = make_waveform
     MODEL.divider = divider
+    MODEL.pitch_shift = pitch_shift
     MODEL.pool = pool
     MODEL.sampler = sampler
     MODEL.max_duration = max_duration
     MODEL.extend_stride = extend_stride
+    MODEL.coherence_json = coherence_json
     MODEL.tmp = []
     MODEL.tmp_new = False
     MODEL.audio_data = []
@@ -268,17 +289,19 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     model = gr.Radio(["melody", "medium", "small", "large"], label="Model", value="small", interactive=True)
                 with gr.Row():
-                    duration = gr.Slider(minimum=1, maximum=120000, value=100, label="Duration", interactive=True)
+                    duration = gr.Slider(minimum=1, maximum=120000, value=1000, label="Duration", interactive=True)
                 with gr.Row():
-                    divider = gr.Slider(minimum=0.001, maximum=120, value=2, step=0.001, label="Divider", interactive=True)
+                    divider = gr.Slider(minimum=0.1, maximum=120, value=1.6, step=0.1, label="Divider", interactive=True)
+                    pitch_shift = gr.Checkbox(label="pitch_shift", info="pitch_shift")
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=True)
                 with gr.Row():
-                    max_duration = gr.Slider(minimum=1, maximum=30, value=3, step=1, label="max_duration", interactive=True)
+                    max_duration = gr.Slider(minimum=1, maximum=300, value=16, step=1, label="max_duration", interactive=True)
                 with gr.Row():
-                    extend_stride = gr.Slider(minimum=0.1, maximum=18, value=0.5, step=0.1, label="extend_stride (<max_duration)", interactive=True)
+                    extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1.6, step=0.1, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
                     coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
+                    update_coherence_json = gr.Button("Update Coherence JSON")
                 with gr.Row():
                     topk = gr.Number(label="Top-k", value=250, interactive=True)
                     topp = gr.Number(label="Top-p", value=0, interactive=True)
@@ -298,7 +321,9 @@ def ui_full(launch_kwargs):
 #                input1 = gr.Audio(source="microphone", type="numpy", streaming=True)
 
                 
-        submit.click(predict_full, inputs=[model, text, melody, duration, divider, sampler, max_duration, extend_stride, topk, topp, temperature, cfg_coef], outputs=[output])
+        submit.click(predict_full, inputs=[model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, coherence_json, topk, topp, temperature, cfg_coef], outputs=[output])
+
+        update_coherence_json.click(update_coherence_json_click, inputs=[coherence_json], queue=False)
         
 #        output_audio = interface.load(check_audio_tmp, None, outputs=[output_audio], every=1)
 #        input1.stream(audio_stream, inputs=[input1], outputs=[output1])
