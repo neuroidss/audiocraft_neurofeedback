@@ -22,6 +22,8 @@ from ..data.audio_utils import convert_audio
 from ..modules.conditioners import ConditioningAttributes, WavCondition
 from ..utils.autocast import TorchAutocast
 
+import torchaudio
+import math
 
 MelodyList = tp.List[tp.Optional[torch.Tensor]]
 MelodyType = tp.Union[torch.Tensor, MelodyList]
@@ -381,6 +383,12 @@ class MusicGen:
 
                   from audiocraft.data.audio import audio_write
 #                  print(output)
+                  
+                  if self.pitch_shift:
+                    output[0] = torchaudio.functional.pitch_shift(waveform=output[0], sample_rate=int(self.sample_rate/self.divider), n_steps=int(math.log2(self.divider)*24), bins_per_octave=24, n_fft=512, win_length=None, hop_length=None, window=None)
+#                  gen_audio_part[0] = torchaudio.functional.pitch_shift(waveform=gen_audio_part[0], sample_rate=int(self.sample_rate/self.divider), n_steps=int(math.log2(self.divider)*24), bins_per_octave=24, n_fft=512, win_length=None, hop_length=None, window=None)
+
+#                  output = gen_audio_part.detach().cpu().float()
 
 #                  audio_tmp = self.pool.submit(audio_write, file.name, output[0],
 #                    int(self.sample_rate/self.divider), strategy="loudness",
@@ -413,18 +421,24 @@ class MusicGen:
 #                  print(tmp)
                   import time
                   time_output = time.time()
-                  while((time_output - time_last_output < self.extend_stride * self.divider) and not (tmp.done()) ):
+#                  print('time_last_output: '+str(time_last_output))
+#                  print('time_output: '+str(time_output))
+#                  while((time_output - time_last_output < self.extend_stride * self.divider) and not (tmp.done()) ):
+                  while((time_output - time_last_output < self.extend_stride * self.divider) or not (tmp.done()) ):
                     time_output = time.time()
 #                  while(self.audio_tmp_new):
                     time.sleep(0.01)
 #                    self.audio_tmp_new = self.audio_tmp_new
 #                  self.audio_tmp.append(audio_tmp)
+#                  print('time_output: '+str(time_output))
+#                  print('time_output - time_last_output: '+str(time_output - time_last_output))
                   print(time.ctime())
                   self.tmp.append(tmp)
                   self.tmp_new = True
 #                  self.tmp.append(file.name)
 #                  self.tmp_new = True
-                  time_last_output = time_output
+#                  time_last_output = time_output
+                  time_last_output = time_last_output + self.extend_stride * self.divider * ((time_output - time_last_output) // (self.extend_stride * self.divider))
 
             gen_tokens = torch.cat(all_tokens, dim=-1)
 
