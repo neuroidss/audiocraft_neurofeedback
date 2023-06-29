@@ -143,7 +143,7 @@ def predict_batched(texts, melodies):
     return [res]
 
 
-def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, coherence_json, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
+def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
     global INTERRUPTING
     INTERRUPTING = False
     if temperature < 0:
@@ -163,7 +163,9 @@ def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, m
     MODEL.sampler = sampler
     MODEL.max_duration = max_duration
     MODEL.extend_stride = extend_stride
+    MODEL.attention_type = attention_type
     MODEL.coherence_json = coherence_json
+#    MODEL.lm.transformer
     MODEL.tmp = []
     MODEL.tmp_new = False
     MODEL.audio_data = []
@@ -296,10 +298,11 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=True)
                 with gr.Row():
-                    max_duration = gr.Slider(minimum=1, maximum=300, value=8, step=1, label="max_duration", interactive=True)
+                    max_duration = gr.Slider(minimum=1, maximum=300, value=1.62, step=0.01, label="max_duration", interactive=True)
                 with gr.Row():
-                    extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1.6, step=0.1, label="extend_stride (<max_duration)", interactive=True)
+                    extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1, step=0.01, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
+                    attention_type = gr.Radio(["casual", "random", "coherence"], label="Attention Type", value="casual", interactive=True)
                     coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
                     update_coherence_json = gr.Button("Update Coherence JSON")
                 with gr.Row():
@@ -321,9 +324,9 @@ def ui_full(launch_kwargs):
 #                input1 = gr.Audio(source="microphone", type="numpy", streaming=True)
 
                 
-        submit.click(predict_full, inputs=[model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, coherence_json, topk, topp, temperature, cfg_coef], outputs=[output])
+        submit.click(predict_full, inputs=[model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef], outputs=[output])
 
-        update_coherence_json.click(update_coherence_json_click, inputs=[coherence_json], queue=False)
+        update_coherence_json.click(update_coherence_json_click, inputs=[attention_type, coherence_json], queue=False)
         
 #        output_audio = interface.load(check_audio_tmp, None, outputs=[output_audio], every=1)
 #        input1.stream(audio_stream, inputs=[input1], outputs=[output1])
