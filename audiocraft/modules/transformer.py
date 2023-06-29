@@ -28,7 +28,8 @@ from .streaming import StreamingModule
 _efficient_attention_backend: str = 'torch'
 #_efficient_attention_backend: str = 'xformers'
 
-
+_attention_type = "casual"
+_coherence_json = "{}"
 
 def set_efficient_attention_backend(backend: str = 'torch'):
     # Using torch by default, it seems a bit faster on older P100 GPUs (~20% faster).
@@ -414,10 +415,12 @@ class StreamingMultiheadAttention(StreamingModule):
             if self.memory_efficient:
                 p = self.dropout if self.training else 0
                 if _efficient_attention_backend == 'torch':
+                  global _coherence_json
+                  global _attention_type
 #                  if True:
-                  if False:
+#                  if False:
 #                  if MODEL is None:
-                  #if MODEL.attention_type == "casual":
+                  if _attention_type == "casual":
                     x = torch.nn.functional.scaled_dot_product_attention(
                         q, k, v, is_causal=attn_mask is not None, dropout_p=p)
 #                    if attn_mask is not None:
@@ -476,27 +479,39 @@ class StreamingMultiheadAttention(StreamingModule):
 
 def _coherence_attention_mask(query: torch._C.Value, key: torch._C.Value
 ) -> torch._C.Value:
-#    global MODEL
+    global _coherence_json
+    global _attention_type
 
     L = query.shape[2]
     S = key.shape[2]
+#    print('L: '+str(L)+', S: '+str(S))
 #    L = 400
 #    S = 400
     mask = torch.ones(L, S, device=query.device, dtype=torch.bool).tril(diagonal=0)
 #    attn_mask = torch.ones(L, S, device=query.device, dtype=query.dtype).tril(diagonal=0)
 #    attn_mask = torch.zeros(L, S, device=query.device, dtype=query.dtype)
 #    attn_mask = torch.ones(L, S, device=query.device, dtype=query.dtype)
-#    if MODEL.attention_type == "random":
-    if True:
+
+#    print(' '.join(globals()).split(' '))
+    
+    if _attention_type == "random":
+#    if True:
 #    if False:
       attn_mask = torch.rand(L, S, device=query.device, dtype=query.dtype)
-#    if MODEL.attention_type == "coherence":
+    if _attention_type == "coherence":
 #    if True:
-    if False:
-      attn_mask = torch.Tensor(json.load(MODEL.coherence_json))
+#    if False:
+      import json
+      import numpy as np
+      coherence_tril = json.loads(_coherence_json)
+      coherence_tril_tensor = torch.Tensor(coherence_tril).to(query.device).type(query.dtype)
+      lower_indices = np.tril_indices(L, k = -1)
+      attn_mask = torch.zeros(L, S, device=query.device, dtype=query.dtype)
+#      print('lower_indices: '+str(lower_indices))
+      attn_mask[lower_indices] = coherence_tril_tensor
+#    print('attn_mask: '+str(attn_mask))
 #    print('mask: '+str(mask))
     attn_mask = attn_mask.masked_fill(mask==False, -float('inf'))
-#    print('L: '+str(L)+', S: '+str(S))
         
     return attn_mask
 
@@ -678,6 +693,12 @@ class StreamingTransformer(StreamingModule):
         self.positional_scale = positional_scale
         self.weight_decay = weight_decay
         self.lr = lr
+        global _coherence_json
+        global _attention_type
+        self.attention_type = _attention_type
+        self.coherence_json = _coherence_json
+#        self.attention_type = "casual"
+#        self.coherence_json = "{}"
 
         assert positional_embedding in ['sin', 'rope', 'sin_rope']
         self.rope: tp.Optional[RotaryEmbedding] = None
@@ -709,6 +730,14 @@ class StreamingTransformer(StreamingModule):
                 # backward hook inside of FSDP...
                 layer._magma_checkpointed = True  # type: ignore
                 assert layer.layer_drop == 0., "Need further checking"  # type: ignore
+
+    def _set_attention_coherence(self, attention_type, coherence_json):
+        global _coherence_json
+        global _attention_type
+        self.attention_type = attention_type
+        self.coherence_json = coherence_json
+        _attention_type = attention_type
+        _coherence_json = coherence_json
 
     def _apply_layer(self, layer, *args, **kwargs):
         method = self.checkpointing
