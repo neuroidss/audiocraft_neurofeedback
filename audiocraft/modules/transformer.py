@@ -487,12 +487,12 @@ def _coherence_attention_mask(query: torch._C.Value, key: torch._C.Value
 #    attn_mask = torch.zeros(L, S, device=query.device, dtype=query.dtype)
 #    attn_mask = torch.ones(L, S, device=query.device, dtype=query.dtype)
 #    if MODEL.attention_type == "random":
-#    if True:
-    if False:
-      attn_mask = torch.rand(L, S, device=query.device, dtype=query.dtype)
-#    if MODEL.attention_type == "coherence":
     if True:
 #    if False:
+      attn_mask = torch.rand(L, S, device=query.device, dtype=query.dtype)
+#    if MODEL.attention_type == "coherence":
+#    if True:
+    if False:
       attn_mask = torch.Tensor(json.load(MODEL.coherence_json))
 #    print('mask: '+str(mask))
     attn_mask = attn_mask.masked_fill(mask==False, -float('inf'))
