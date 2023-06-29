@@ -291,7 +291,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     model = gr.Radio(["melody", "medium", "small", "large"], label="Model", value="small", interactive=True)
                 with gr.Row():
-                    duration = gr.Slider(minimum=1, maximum=120000, value=1000, label="Duration", interactive=True)
+                    duration = gr.Slider(minimum=1, maximum=120000, value=500, label="Duration", interactive=True)
                 with gr.Row():
                     divider = gr.Slider(minimum=0.1, maximum=120, value=1.6, step=0.1, label="Divider", interactive=True)
                     pitch_shift = gr.Checkbox(label="pitch_shift", info="pitch_shift")
@@ -302,7 +302,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1, step=0.01, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
-                    attention_type = gr.Radio(["casual", "random", "coherence"], label="Attention Type", value="casual", interactive=True)
+                    attention_type = gr.Radio(["casual", "casual", "coherence"], label="Attention Type", value="casual", interactive=False)
                     coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
                     update_coherence_json = gr.Button("Update Coherence JSON")
                 with gr.Row():
