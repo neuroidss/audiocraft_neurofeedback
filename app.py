@@ -306,7 +306,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1, step=0.01, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
-                    attention_type = gr.Radio(["casual", "casual", "coherence"], label="Attention Type", value="casual", interactive=True)
+                    attention_type = gr.Radio(["casual", "random", "coherence"], label="Attention Type", value="casual", interactive=True)
                     coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
                     update_coherence_json = gr.Button("Update Coherence JSON")
                 with gr.Row():
