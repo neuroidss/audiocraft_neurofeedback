@@ -318,6 +318,7 @@ class StreamingMultiheadAttention(StreamingModule):
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor,
                 key_padding_mask=None, need_weights=False, attn_mask=None,
                 average_attn_weights=True, is_causal=False):
+#        global MODEL
         assert attn_mask is None
         assert not is_causal, ("new param added in torch 2.0.1 not supported, "
                                "use the causal args in the constructor.")
@@ -413,12 +414,21 @@ class StreamingMultiheadAttention(StreamingModule):
             if self.memory_efficient:
                 p = self.dropout if self.training else 0
                 if _efficient_attention_backend == 'torch':
-#                  if False:
-                  if True:
+#                  if True:
+                  if False:
+#                  if MODEL is None:
+                  #if MODEL.attention_type == "casual":
+                    x = torch.nn.functional.scaled_dot_product_attention(
+                        q, k, v, is_causal=attn_mask is not None, dropout_p=p)
+                    if attn_mask is not None:
+#                      print('q.shape[2]: '+str(q.shape[2])+', k.shape[2]: '+str(k.shape[2]))
+                  else:
                     if attn_mask is not None:
                       attn_mask = _coherence_attention_mask(q, k)
                       x = torch.nn.functional.scaled_dot_product_attention(
                         q, k, v, attn_mask, dropout_p=p)
+                      if attn_mask is not None:
+#                        print('q.shape[2]: '+str(q.shape[2])+', k.shape[2]: '+str(k.shape[2]))
 #                      print('attn_mask: '+str(attn_mask))
 #                      print('attn_mask.shape: '+str(attn_mask.shape))
 #                      x = torch.nn.functional.scaled_dot_product_attention(
@@ -426,9 +436,6 @@ class StreamingMultiheadAttention(StreamingModule):
                     else:
                       x = torch.nn.functional.scaled_dot_product_attention(
                         q, k, v, is_causal=False, dropout_p=p)
-                  else:
-                    x = torch.nn.functional.scaled_dot_product_attention(
-                        q, k, v, is_causal=attn_mask is not None, dropout_p=p)
                 else:
                     x = ops.memory_efficient_attention(q, k, v, attn_mask, p=p)
             else:
@@ -469,6 +476,7 @@ class StreamingMultiheadAttention(StreamingModule):
 
 def _coherence_attention_mask(query: torch._C.Value, key: torch._C.Value
 ) -> torch._C.Value:
+#    global MODEL
 
     L = query.shape[2]
     S = key.shape[2]
@@ -478,9 +486,17 @@ def _coherence_attention_mask(query: torch._C.Value, key: torch._C.Value
 #    attn_mask = torch.ones(L, S, device=query.device, dtype=query.dtype).tril(diagonal=0)
 #    attn_mask = torch.zeros(L, S, device=query.device, dtype=query.dtype)
 #    attn_mask = torch.ones(L, S, device=query.device, dtype=query.dtype)
-    attn_mask = torch.rand(L, S, device=query.device, dtype=query.dtype)
+#    if MODEL.attention_type == "random":
+    if True:
+#    if False:
+      attn_mask = torch.rand(L, S, device=query.device, dtype=query.dtype)
+#    if MODEL.attention_type == "coherence":
+#    if True:
+    if False:
+      attn_mask = torch.Tensor(json.load(MODEL.coherence_json))
 #    print('mask: '+str(mask))
     attn_mask = attn_mask.masked_fill(mask==False, -float('inf'))
+#    print('L: '+str(L)+', S: '+str(S))
         
     return attn_mask
 
