@@ -335,7 +335,7 @@ class MusicGen:
                 max_gen_len = int(chunk_duration * self.frame_rate)
                 print('current_gen_offset: '+str(current_gen_offset)+', prompt_length: '+str(prompt_length)+', total_gen_len: '+str(total_gen_len)+', time_offset: '+str(time_offset)+', chunk_duration: '+str(chunk_duration)+', max_gen_len: '+str(max_gen_len))
                 for attr, ref_wav in zip(attributes, ref_wavs):
-                    print("attr: "+str(attr)+", ref_wav: "+str(ref_wav))
+#                    print("attr: "+str(attr)+", ref_wav: "+str(ref_wav))
                     wav_length = ref_wav.length.item()
                     if wav_length == 0:
                         continue
@@ -351,10 +351,10 @@ class MusicGen:
                         ref_wav[0][:, positions % wav_length],
                         torch.full_like(ref_wav[1], wav_target_length))
                 with self.autocast:
-                    print('prompt_tokens: '+str(prompt_tokens))
-                    if not (prompt_tokens is None):
-                      print('prompt_tokens.shape: '+str(prompt_tokens.shape))
-                    print('attributes: '+str(attributes))
+#                    print('prompt_tokens: '+str(prompt_tokens))
+#                    if not (prompt_tokens is None):
+#                      print('prompt_tokens.shape: '+str(prompt_tokens.shape))
+#                    print('attributes: '+str(attributes))
                     gen_tokens = self.lm.generate(
                         prompt_tokens, attributes,
                         callback=callback, max_gen_len=max_gen_len, **self.generation_params)
@@ -414,7 +414,7 @@ class MusicGen:
                     time.sleep(0.01)
 #                    self.audio_tmp_new = self.audio_tmp_new
 #                  self.audio_tmp.append(audio_tmp)
-                  print(time.ctime())
+#                  print(time.ctime())
                   self.audio_tmp.append(file.name)
                   self.audio_tmp_new = True
                   time_last_audio_output = time_audio_output
@@ -436,7 +436,7 @@ class MusicGen:
 #                  self.audio_tmp.append(audio_tmp)
 #                  print('time_output: '+str(time_output))
 #                  print('time_output - time_last_output: '+str(time_output - time_last_output))
-                  print(time.ctime())
+#                  print(time.ctime())
                   self.tmp.append(tmp)
                   self.tmp_new = True
 #                  self.tmp.append(file.name)
