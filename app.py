@@ -69,10 +69,14 @@ def load_model(version='melody'):
         MODEL = MusicGen.get_pretrained(version)
 
 
-def update_coherence_json_click(coherence_json):
+def update_coherence_json_click(attention_type, coherence_json):
     if not (MODEL is None):
+      MODEL.lm.transformer._set_attention_coherence(attention_type, coherence_json)
+      MODEL.lm.transformer.attention_type = attention_type
+      MODEL.lm.transformer.coherence_json = coherence_json
+      MODEL.attention_type = attention_type
       MODEL.coherence_json = coherence_json
-      print("coherence_json: ", coherence_json)
+#      print("coherence_json: ", coherence_json)
 
 
 def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
@@ -291,7 +295,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     model = gr.Radio(["melody", "medium", "small", "large"], label="Model", value="small", interactive=True)
                 with gr.Row():
-                    duration = gr.Slider(minimum=1, maximum=120000, value=500, label="Duration", interactive=True)
+                    duration = gr.Slider(minimum=1, maximum=120000, value=300, label="Duration", interactive=True)
                 with gr.Row():
                     divider = gr.Slider(minimum=0.1, maximum=120, value=1.6, step=0.1, label="Divider", interactive=True)
                     pitch_shift = gr.Checkbox(label="pitch_shift", info="pitch_shift")
@@ -302,7 +306,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1, step=0.01, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
-                    attention_type = gr.Radio(["casual", "casual", "coherence"], label="Attention Type", value="casual", interactive=False)
+                    attention_type = gr.Radio(["casual", "casual", "coherence"], label="Attention Type", value="casual", interactive=True)
                     coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
                     update_coherence_json = gr.Button("Update Coherence JSON")
                 with gr.Row():
