@@ -5,13 +5,13 @@ https://github.com/neuroidss/timeflux_neurofeedback_inverse_gamepad/blob/master/
 eeg coherence from file to transformer attention:
 https://cdn.discordapp.com/attachments/1012356021395652700/1123932738144186378/psytrance_small_x1.6_es1_md1.62_coherence_attention_tmp0pa271z7.mp4
 
+here where eeg coherence applied to transformer attention in MusicGen:
 https://github.com/neuroidss/audiocraft_neurofeedback/blob/main/audiocraft/modules/transformer.py#L431
 ```python
 attn_mask = _coherence_attention_mask(q, k)
 x = torch.nn.functional.scaled_dot_product_attention(
                         q, k, v, attn_mask, dropout_p=p)
 ```
-here where eeg coherence applied to transformer attention in MusicGen
 
 # Audiocraft
 ![docs badge](https://github.com/facebookresearch/audiocraft/workflows/audiocraft_docs/badge.svg)
