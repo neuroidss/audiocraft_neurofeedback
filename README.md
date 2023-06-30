@@ -1,6 +1,6 @@
 # Audiocraft neurofeedback
 possibility to stream EEG coherence into MusicGen: 
-https://github.com/neuroidss/timeflux_neurofeedback_inverse_gamepad/blob/master/examples/neurofeedback_coherence_musicgen.yaml
+https://github.com/neuroidss/timeflux_neurofeedback_inverse_gamepad/blob/master/examples/neurofeedback_coherence_musicgen.yaml#L212
 
 # Audiocraft
 ![docs badge](https://github.com/facebookresearch/audiocraft/workflows/audiocraft_docs/badge.svg)
