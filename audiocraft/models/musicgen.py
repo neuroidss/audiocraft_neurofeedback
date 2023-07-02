@@ -97,16 +97,16 @@ class MusicGen:
             )
 
         cache_dir = os.environ.get('MUSICGEN_ROOT', None)
-#        compression_model = load_compression_model(name, device=device, cache_dir=cache_dir)
-#        lm = load_lm_model(name, device=device, cache_dir=cache_dir)
-        LOCAL_MODEL_CHECKPOINTS_MAP = {
-            "small": "models/musicgen-small",
-            "medium": "models/musicgen-medium",
-            "large": "models/musicgen-large",
-            "melody": "models/musicgen-melody",
-        }
-        compression_model = load_compression_model(LOCAL_MODEL_CHECKPOINTS_MAP[name]+'/'+'compression_state_dict.bin', device=device, cache_dir=cache_dir)
-        lm = load_lm_model(LOCAL_MODEL_CHECKPOINTS_MAP[name]+'/'+'state_dict.bin', device=device, cache_dir=cache_dir)
+        compression_model = load_compression_model(name, device=device, cache_dir=cache_dir)
+        lm = load_lm_model(name, device=device, cache_dir=cache_dir)
+#        LOCAL_MODEL_CHECKPOINTS_MAP = {
+#            "small": "models/musicgen-small",
+#            "medium": "models/musicgen-medium",
+#            "large": "models/musicgen-large",
+#            "melody": "models/musicgen-melody",
+#        }
+#        compression_model = load_compression_model(LOCAL_MODEL_CHECKPOINTS_MAP[name]+'/'+'compression_state_dict.bin', device=device, cache_dir=cache_dir)
+#        lm = load_lm_model(LOCAL_MODEL_CHECKPOINTS_MAP[name]+'/'+'state_dict.bin', device=device, cache_dir=cache_dir)
         if name == 'melody':
             lm.condition_provider.conditioners['self_wav'].match_len_on_eval = True
 
