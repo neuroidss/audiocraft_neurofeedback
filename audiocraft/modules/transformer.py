@@ -28,7 +28,7 @@ from .streaming import StreamingModule
 _efficient_attention_backend: str = 'torch'
 #_efficient_attention_backend: str = 'xformers'
 
-_attention_type = "casual"
+_attention_type = "default"
 _coherence_json = "{}"
 
 def set_efficient_attention_backend(backend: str = 'torch'):
@@ -420,7 +420,7 @@ class StreamingMultiheadAttention(StreamingModule):
 #                  if True:
 #                  if False:
 #                  if MODEL is None:
-                  if _attention_type == "casual":
+                  if _attention_type == "default":
                     x = torch.nn.functional.scaled_dot_product_attention(
                         q, k, v, is_causal=attn_mask is not None, dropout_p=p)
 #                    if attn_mask is not None:
