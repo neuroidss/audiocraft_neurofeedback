@@ -443,7 +443,7 @@ class MusicGen:
                     time.sleep(0.01)
 #                    self.audio_tmp_new = self.audio_tmp_new
 #                  self.audio_tmp.append(audio_tmp)
-#                  print('time_output: '+str(time_output))
+                  print('time_output: '+str(time_output))
 #                  print('time_output - time_last_output: '+str(time_output - time_last_output))
 #                  print(time.ctime())
                   self.tmp.append(tmp)
