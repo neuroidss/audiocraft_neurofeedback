@@ -333,9 +333,10 @@ class MusicGen:
             stride_tokens = int(self.frame_rate * self.extend_stride)
 
             import time
-            time_start = time.time()
-            time_last_audio_output = time_start - 1
-            time_last_output = time_start - 1
+            time_start = self.time1start
+#            time_start = time.time()
+            time_last_audio_output = time_start# - 1
+            time_last_output = time_start# - 1
 
             while current_gen_offset + prompt_length < total_gen_len:
                 time_offset = current_gen_offset / self.frame_rate
