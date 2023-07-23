@@ -35,6 +35,9 @@ INTERRUPTING = False
 # We have to wrap subprocess call to clean a bit the log when using gr.make_waveform
 _old_call = sp.call
 
+time1start = None
+time2start = None
+time3start = None
 
 def _call_nostderr(*args, **kwargs):
     # Avoid ffmpeg vomitting on the logs.
@@ -176,6 +179,9 @@ def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, m
     MODEL.audio_data_new = False
     MODEL.audio_tmp = []
     MODEL.audio_tmp_new = False
+    global time1start
+    MODEL.time1start = time1start
+    
 
     def _progress(generated, to_generate):
         progress((generated, to_generate))
@@ -205,7 +211,12 @@ def audio_stream(mic):
 #          yield mic
 #          return audio_data
 def check_tmp1(sampler):
+    import time
+    global time1start
+    if time1start is None:
+      time1start = time.time()
     if not (MODEL is None):
+     MODEL.time1start = time1start
      if hasattr(MODEL, "tmp"):
       if (len(MODEL.tmp)>0) and (MODEL.sampler>=1):
        if hasattr(MODEL, "tmp_new"):
@@ -217,7 +228,12 @@ def check_tmp1(sampler):
           print('tmp_result: '+str(tmp_result))
           return tmp_result
 def check_tmp2(sampler):
+    import time
+    global time2start
+    if time2start is None:
+      time2start = time.time()
     if not (MODEL is None):
+     MODEL.time2start = time2start
      if hasattr(MODEL, "tmp"):
       if (len(MODEL.tmp)>0) and (MODEL.sampler>=2):
        if hasattr(MODEL, "tmp_new"):
@@ -229,7 +245,12 @@ def check_tmp2(sampler):
           print('tmp_result: '+str(tmp_result))
           return tmp_result
 def check_tmp3(sampler):
+    import time
+    global time3start
+    if time3start is None:
+      time3start = time.time()
     if not (MODEL is None):
+     MODEL.time3start = time3start
      if hasattr(MODEL, "tmp"):
       if (len(MODEL.tmp)>0) and (MODEL.sampler>=3):
        if hasattr(MODEL, "tmp_new"):
@@ -303,7 +324,7 @@ def ui_full(launch_kwargs):
                     divider = gr.Slider(minimum=0.1, maximum=120, value=1.6, step=0.1, label="Divider", interactive=True)
                     pitch_shift = gr.Checkbox(label="pitch_shift", info="pitch_shift")
                 with gr.Row():
-                    sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=True)
+                    sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=False)
                 with gr.Row():
                     max_duration = gr.Slider(minimum=1, maximum=300, value=1.62, step=0.01, label="max_duration", interactive=True, elem_id="max_duration")
                 with gr.Row():
