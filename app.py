@@ -322,11 +322,11 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     duration = gr.Slider(minimum=1, maximum=120000, value=300, label="Duration", interactive=True)
                 with gr.Row():
-                    divider = gr.Slider(minimum=0.1, maximum=120, value=1.8, step=0.1, label="Divider", interactive=True, elem_id="divider")
+                    divider = gr.Slider(minimum=0.1, maximum=120, value=2, step=0.1, label="Divider", interactive=False, elem_id="divider")
                     pitch_shift = gr.Checkbox(label="pitch_shift", info="pitch_shift")
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=False)
-                    time_shift = gr.Slider(minimum=0, maximum=10, value=3.2, step=0.1, label="Time Shift", interactive=True)
+                    time_shift = gr.Slider(minimum=0, maximum=10, value=4, step=0.1, label="Time Shift", interactive=True)
                 with gr.Row():
                     max_duration = gr.Slider(minimum=1, maximum=300, value=1.62, step=0.01, label="max_duration", interactive=True, elem_id="max_duration")
                 with gr.Row():
