@@ -150,7 +150,7 @@ def predict_batched(texts, melodies):
     return [res]
 
 
-def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
+def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, time_shift, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
     global INTERRUPTING
     INTERRUPTING = False
     if temperature < 0:
@@ -168,6 +168,7 @@ def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, m
     MODEL.pitch_shift = pitch_shift
     MODEL.pool = pool
     MODEL.sampler = sampler
+    MODEL.time_shift = time_shift
     MODEL.max_duration = max_duration
     MODEL.extend_stride = extend_stride
     MODEL.attention_type = attention_type
@@ -325,6 +326,7 @@ def ui_full(launch_kwargs):
                     pitch_shift = gr.Checkbox(label="pitch_shift", info="pitch_shift")
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=False)
+                    time_shift = gr.Slider(minimum=0, maximum=10000, value=1000, step=1, label="Time Shift", interactive=True)
                 with gr.Row():
                     max_duration = gr.Slider(minimum=1, maximum=300, value=1.62, step=0.01, label="max_duration", interactive=True, elem_id="max_duration")
                 with gr.Row():
@@ -355,7 +357,7 @@ def ui_full(launch_kwargs):
 #                input1 = gr.Audio(source="microphone", type="numpy", streaming=True)
 
                 
-        submit.click(predict_full, inputs=[model, text, melody, duration, divider, pitch_shift, sampler, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef], outputs=[output])
+        submit.click(predict_full, inputs=[model, text, melody, duration, divider, pitch_shift, sampler, time_shift, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef], outputs=[output])
 
         update_coherence_json.click(update_coherence_json_click, inputs=[attention_type, coherence_json], queue=False)
         
@@ -364,9 +366,15 @@ def ui_full(launch_kwargs):
 #        output1 = interface.load(audio_stream, inputs=[input1], outputs=[output1], live=True)
 #        output1 = interface.load(check_tmp1, None, outputs=[output1], every=1.5)
 #        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="(x) => console.log(Date.now())")
-        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => {var time1start = Date.now(); function playAudio1(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[0].play(); var time1now = Date.now(); var frame_time1 = parseInt(document.getElementById('max_duration').querySelector('input').value*3000); var next_time1 = frame_time1-((time1now-time1start)%frame_time1); setTimeout(() => { playAudio1() }, next_time1) }; setTimeout(() => { playAudio1() }, 1000*0*document.getElementById('max_duration').querySelector('input').value) }")
-        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => {var time2start = Date.now()+1000*1*document.getElementById('max_duration').querySelector('input').value; function playAudio2(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[1].play(); var time2now = Date.now(); var frame_time2 = parseInt(document.getElementById('max_duration').querySelector('input').value*3000); var next_time2 = frame_time2-((time2now-time2start)%frame_time2); setTimeout(() => { playAudio2() }, next_time2) }; setTimeout(() => { playAudio2() }, 1000*1*document.getElementById('max_duration').querySelector('input').value) }")
-        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => {var time3start = Date.now()+1000*2*document.getElementById('max_duration').querySelector('input').value; function playAudio3(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[2].play(); var time3now = Date.now(); var frame_time3 = parseInt(document.getElementById('max_duration').querySelector('input').value*3000); var next_time3 = frame_time3-((time3now-time3start)%frame_time3); setTimeout(() => { playAudio3() }, next_time3) }; setTimeout(() => { playAudio3() }, 1000*2*document.getElementById('max_duration').querySelector('input').value) }")
+
+        import time
+        global time1start
+        if time1start is None:
+          time1start = time.time()
+
+        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => {var time1start = "+str(time1start)+"; function playAudio1(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[0].play(); var time1now = Date.now(); var frame_time1 = parseInt(document.getElementById('max_duration').querySelector('input').value*3000); var next_time1 = frame_time1-((time1now-time1start)%frame_time1); setTimeout(() => { playAudio1() }, next_time1) }; setTimeout(() => { playAudio1() }, 1000*0*document.getElementById('max_duration').querySelector('input').value) }")
+        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => {var time2start = "+str(time1start)+"+1000*1*document.getElementById('max_duration').querySelector('input').value; function playAudio2(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[1].play(); var time2now = Date.now(); var frame_time2 = parseInt(document.getElementById('max_duration').querySelector('input').value*3000); var next_time2 = frame_time2-((time2now-time2start)%frame_time2); setTimeout(() => { playAudio2() }, next_time2) }; setTimeout(() => { playAudio2() }, 1000*1*document.getElementById('max_duration').querySelector('input').value) }")
+        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => {var time3start = "+str(time1start)+"+1000*2*document.getElementById('max_duration').querySelector('input').value; function playAudio3(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[2].play(); var time3now = Date.now(); var frame_time3 = parseInt(document.getElementById('max_duration').querySelector('input').value*3000); var next_time3 = frame_time3-((time3now-time3start)%frame_time3); setTimeout(() => { playAudio3() }, next_time3) }; setTimeout(() => { playAudio3() }, 1000*2*document.getElementById('max_duration').querySelector('input').value) }")
 #        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 3000)")
 #        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 6000)")
 #        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 9000)")
