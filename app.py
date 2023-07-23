@@ -220,10 +220,11 @@ def check_tmp1(sampler):
      MODEL.time1start = time1start
      if hasattr(MODEL, "tmp"):
       if (len(MODEL.tmp)>0) and (MODEL.sampler>=1):
-       if hasattr(MODEL, "tmp_new"):
-        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==0)):
+       if hasattr(MODEL, "tmp_new") and hasattr(MODEL, "frame_idx"):
+#        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==0)):
+        while not(MODEL.tmp_new and (((MODEL.frame_idx))%MODEL.sampler==0)):
           time.sleep(0.01)
-        if True:
+        if MODEL.tmp[len(MODEL.tmp)-1].done():
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
           MODEL.tmp_new = False
           print('tmp_result: '+str(tmp_result))
@@ -237,10 +238,11 @@ def check_tmp2(sampler):
      MODEL.time2start = time2start
      if hasattr(MODEL, "tmp"):
       if (len(MODEL.tmp)>0) and (MODEL.sampler>=2):
-       if hasattr(MODEL, "tmp_new"):
-        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==1)):
+       if hasattr(MODEL, "tmp_new") and hasattr(MODEL, "frame_idx"):
+#        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==1)):
+        while not(MODEL.tmp_new and (((MODEL.frame_idx))%MODEL.sampler==1)):
           time.sleep(0.01)
-        if True:
+        if MODEL.tmp[len(MODEL.tmp)-1].done():
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
           MODEL.tmp_new = False
           print('tmp_result: '+str(tmp_result))
@@ -254,10 +256,11 @@ def check_tmp3(sampler):
      MODEL.time3start = time3start
      if hasattr(MODEL, "tmp"):
       if (len(MODEL.tmp)>0) and (MODEL.sampler>=3):
-       if hasattr(MODEL, "tmp_new"):
-        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==2)):
+       if hasattr(MODEL, "tmp_new") and hasattr(MODEL, "frame_idx"):
+#        while not(MODEL.tmp_new and ((len(MODEL.tmp))%MODEL.sampler==2)):
+        while not(MODEL.tmp_new and (((MODEL.frame_idx))%MODEL.sampler==2)):
           time.sleep(0.01)
-        if True:
+        if MODEL.tmp[len(MODEL.tmp)-1].done():
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
           MODEL.tmp_new = False
           print('tmp_result: '+str(tmp_result))
@@ -322,11 +325,11 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     duration = gr.Slider(minimum=1, maximum=120000, value=300, label="Duration", interactive=True)
                 with gr.Row():
-                    divider = gr.Slider(minimum=0.1, maximum=120, value=2, step=0.1, label="Divider", interactive=False, elem_id="divider")
+                    divider = gr.Slider(minimum=0.1, maximum=120, value=1.6, step=0.1, label="Divider", interactive=False, elem_id="divider")
                     pitch_shift = gr.Checkbox(label="pitch_shift", info="pitch_shift")
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=False)
-                    time_shift = gr.Slider(minimum=0, maximum=10, value=4, step=0.1, label="Time Shift", interactive=True)
+                    time_shift = gr.Slider(minimum=0, maximum=10, value=1.6, step=0.1, label="Time Shift", interactive=True)
                 with gr.Row():
                     max_duration = gr.Slider(minimum=1, maximum=300, value=1.62, step=0.01, label="max_duration", interactive=True, elem_id="max_duration")
                 with gr.Row():
