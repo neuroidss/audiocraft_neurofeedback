@@ -437,7 +437,7 @@ class MusicGen:
 #                  print('time_last_output: '+str(time_last_output))
 #                  print('time_output: '+str(time_output))
 #                  while((time_output - time_last_output < self.extend_stride * self.divider) and not (tmp.done()) ):
-                  while((time_output - time_last_output < self.extend_stride * self.divider) or not (tmp.done()) ):
+                  while((time_output - time_last_output < self.extend_stride * self.divider)):# or not (tmp.done()) ):
                     time_output = time.time()
 #                  while(self.audio_tmp_new):
                     time.sleep(0.01)
@@ -451,7 +451,11 @@ class MusicGen:
 #                  self.tmp.append(file.name)
 #                  self.tmp_new = True
 #                  time_last_output = time_output
-                  time_last_output = time_last_output + self.extend_stride * self.divider * ((time_output - time_last_output) // (self.extend_stride * self.divider))
+#                  time_last_output = time_last_output + self.extend_stride * self.divider * ((time_output - time_last_output) // (self.extend_stride * self.divider))
+                  frame_time=(self.extend_stride * self.divider)
+                  self.frame_idx=(time_output - (time_start - self.time_shift))//frame_time
+                  time_last_output=(time_start - self.time_shift)+self.frame_idx*frame_time
+                  print('frame_idx: '+str(self.frame_idx))
 
             gen_tokens = torch.cat(all_tokens, dim=-1)
 
