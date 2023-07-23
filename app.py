@@ -214,6 +214,7 @@ def check_tmp1(sampler):
         if True:
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
           MODEL.tmp_new = False
+          print('tmp_result: '+str(tmp_result))
           return tmp_result
 def check_tmp2(sampler):
     if not (MODEL is None):
@@ -225,6 +226,7 @@ def check_tmp2(sampler):
         if True:
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
           MODEL.tmp_new = False
+          print('tmp_result: '+str(tmp_result))
           return tmp_result
 def check_tmp3(sampler):
     if not (MODEL is None):
@@ -236,6 +238,7 @@ def check_tmp3(sampler):
         if True:
           tmp_result = MODEL.tmp[len(MODEL.tmp)-1].result()
           MODEL.tmp_new = False
+          print('tmp_result: '+str(tmp_result))
           return tmp_result
 def check_audio_tmp1():
     if not (MODEL is None):
@@ -312,14 +315,17 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     topk = gr.Number(label="Top-k", value=250, interactive=True)
                     topp = gr.Number(label="Top-p", value=0, interactive=True)
-                    temperature = gr.Number(label="Temperature", value=1.0, interactive=True)
+                    temperature = gr.Number(label="Temperature", value=1.0, step=0.0001, interactive=True)
                     cfg_coef = gr.Number(label="Classifier Free Guidance", value=3.0, interactive=True)
             with gr.Column():
                 output = gr.Video(label="Generated Music")
 #                output = gr.Video(label="Generated Music (updates every second)")#, autoplay=True)
-                output1 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
-                output2 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
-                output3 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
+                output1 = gr.Video(label="Generated Music (updates every second)")
+                output2 = gr.Video(label="Generated Music (updates every second)")
+                output3 = gr.Video(label="Generated Music (updates every second)")
+#                output1 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
+#                output2 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
+#                output3 = gr.Video(label="Generated Music (updates every second)", autoplay=True)
 #                output1 = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
 #                output2 = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
 #                output3 = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
@@ -336,9 +342,16 @@ def ui_full(launch_kwargs):
 #        input1.stream(audio_stream, inputs=[input1], outputs=[output1])
 #        output1 = interface.load(audio_stream, inputs=[input1], outputs=[output1], live=True)
 #        output1 = interface.load(check_tmp1, None, outputs=[output1], every=1.5)
-        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05)
-        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05)
-        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05)
+#        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="(x) => console.log(Date.now())")
+        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[0].play() }, 1.62*3000) }, 0)")
+        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[1].play() }, 1.62*3000) }, 1.62*1000)")
+        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[2].play() }, 1.62*3000) }, 1.62*2000)")
+#        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 3000)")
+#        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 6000)")
+#        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 9000)")
+#        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05)
+#        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05)
+#        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05)
 #        output1 = interface.load(check_audio_tmp1, None, outputs=[output1], every=0.1)
 #        output2 = interface.load(check_audio_tmp2, None, outputs=[output2], every=0.1)
 #        output3 = interface.load(check_audio_tmp3, None, outputs=[output3], every=0.1)
