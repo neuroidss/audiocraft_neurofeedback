@@ -305,7 +305,7 @@ def ui_full(launch_kwargs):
                 with gr.Row():
                     sampler = gr.Slider(minimum=0, maximum=3, value=3, step=1, label="Sampler", interactive=True)
                 with gr.Row():
-                    max_duration = gr.Slider(minimum=1, maximum=300, value=1.62, step=0.01, label="max_duration", interactive=True)
+                    max_duration = gr.Slider(minimum=1, maximum=300, value=1.62, step=0.01, label="max_duration", interactive=True, elem_id="max_duration")
                 with gr.Row():
                     extend_stride = gr.Slider(minimum=0.1, maximum=180, value=1, step=0.01, label="extend_stride (<max_duration)", interactive=True)
                 with gr.Row():
@@ -343,9 +343,9 @@ def ui_full(launch_kwargs):
 #        output1 = interface.load(audio_stream, inputs=[input1], outputs=[output1], live=True)
 #        output1 = interface.load(check_tmp1, None, outputs=[output1], every=1.5)
 #        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="(x) => console.log(Date.now())")
-        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[0].play() }, 1.62*3000) }, 0)")
-        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[1].play() }, 1.62*3000) }, 1.62*1000)")
-        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[2].play() }, 1.62*3000) }, 1.62*2000)")
+        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[0].play() }, document.getElementById('max_duration').querySelector('input').value*3000) }, 0)")
+        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[1].play() }, document.getElementById('max_duration').querySelector('input').value*3000) }, document.getElementById('max_duration').querySelector('input').value*1000)")
+        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => setTimeout(() => { setInterval(() => { var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[2].play() }, document.getElementById('max_duration').querySelector('input').value*3000) }, document.getElementById('max_duration').querySelector('input').value*2000)")
 #        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 3000)")
 #        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 6000)")
 #        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => setTimeout(() => { document.getElementsByTagName('video')[0].play() }, 9000)")
