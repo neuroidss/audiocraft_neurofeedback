@@ -413,8 +413,8 @@ class MusicGen:
 #                    file.name, output[0], int(self.sample_rate/self.divider), strategy="loudness",
 #                    loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
 
-                 if False:
-#                if True:
+#                 if False:
+                 if True:
                   import time
                   time_audio_output = time.time()
                   while(time_audio_output - time_last_audio_output < self.extend_stride * self.divider):
@@ -426,10 +426,14 @@ class MusicGen:
 #                  print(time.ctime())
                   self.audio_tmp.append(file.name)
                   self.audio_tmp_new = True
-                  time_last_audio_output = time_audio_output
+#                  time_last_audio_output = time_audio_output
+                  frame_time=(self.extend_stride * self.divider)
+                  self.frame_idx=(time_audio_output - (time_start - self.time_shift))//frame_time
+                  time_last_audio_output=(time_start - self.time_shift)+self.frame_idx*frame_time
+                  print('frame_idx: '+str(self.frame_idx))
 
-#                if False:
-                 if True:
+                 if False:
+#                 if True:
                   tmp = self.pool.submit(self.make_waveform, file.name)
 #                  print(tmp)
                   import time
