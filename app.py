@@ -136,8 +136,10 @@ def _do_predictions(texts, melodies, duration, progress=False, **gen_kwargs):
             audio_write(
                 file.name, output, int(MODEL.sample_rate/MODEL.divider), strategy="loudness",
                 loudness_headroom_db=16, loudness_compressor=True, add_suffix=False)
-            out_files.append(pool.submit(make_waveform, file.name))
-    res = [out_file.result() for out_file in out_files]
+            out_files.append(file.name)
+#            out_files.append(pool.submit(make_waveform, file.name))
+#    res = [out_file.result() for out_file in out_files]
+    res = [out_file for out_file in out_files]
     print("batch finished", len(texts), time.time() - be)
     return res
 
@@ -359,7 +361,8 @@ def ui_full(launch_kwargs):
                     temperature = gr.Number(label="Temperature", value=1.0, step=0.0001, interactive=True)
                     cfg_coef = gr.Number(label="Classifier Free Guidance", value=3.0, interactive=True)
             with gr.Column():
-                output = gr.Video(label="Generated Music")
+#                output = gr.Video(label="Generated Music")
+                output = gr.Audio(label="Generated Music")
 #                output = gr.Video(label="Generated Music (updates every second)")#, autoplay=True)
 #                output1 = gr.Video(label="Generated Music (updates every second)")
 #                output2 = gr.Video(label="Generated Music (updates every second)")
