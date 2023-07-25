@@ -2,8 +2,8 @@
 possibility to stream EEG coherence into MusicGen: 
 https://github.com/neuroidss/timeflux_neurofeedback_inverse_gamepad/blob/master/examples/neurofeedback_coherence_musicgen.yaml#L212
 ```yaml
-      module: timeflux_neurofeedback_inverse_gamepad.nodes.musicgenstreamer
-      class: MusicGenStreamer
+      module: timeflux_neurofeedback_inverse_gamepad.nodes.gradiostreamer
+      class: GradioStreamer
 ```
 
 demo of eeg coherence from file to transformer attention:
