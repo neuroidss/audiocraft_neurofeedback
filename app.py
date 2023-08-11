@@ -363,7 +363,7 @@ def ui_full(launch_kwargs):
                     seed = gr.Number(label="Seed", value=-1, scale=4, precision=0, interactive=True)
                     gr.Button('\U0001f3b2\ufe0f', scale=1).click(fn=lambda: -1, outputs=[seed], queue=False)
                     reuse_seed = gr.Button('\u267b\ufe0f', scale=1)
-                    topk = gr.Number(label="Top-k", value=250, interactive=True)
+                    topk = gr.Number(label="Top-k", value=0, interactive=True)
                     topp = gr.Number(label="Top-p", value=0, interactive=True)
                     temperature = gr.Number(label="Temperature", value=1.0, step=0.0001, interactive=True)
                     cfg_coef = gr.Number(label="Classifier Free Guidance", value=3.0, interactive=True)
