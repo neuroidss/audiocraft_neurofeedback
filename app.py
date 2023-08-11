@@ -152,7 +152,7 @@ def predict_batched(texts, melodies):
     return [res]
 
 
-def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, time_shift, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
+def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, time_shift, max_duration, extend_stride, attention_type, coherence_json, seed, topk, topp, temperature, cfg_coef, progress=gr.Progress()):
     global INTERRUPTING
     INTERRUPTING = False
     if temperature < 0:
@@ -185,6 +185,10 @@ def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, t
     global time1start
     MODEL.time1start = time1start
     
+    if seed < 0:
+        import random
+        seed = random.randint(0, 0xffff_ffff_ffff)
+    torch.manual_seed(seed)
 
     def _progress(generated, to_generate):
         progress((generated, to_generate))
@@ -196,7 +200,7 @@ def predict_full(model, text, melody, duration, divider, pitch_shift, sampler, t
         [text], [melody], duration, progress=True,
         top_k=topk, top_p=topp, temperature=temperature, cfg_coef=cfg_coef)
     print(outs[0])
-    return outs[0]
+    return [outs[0], seed]
 
 def audio_stream(mic):
     if not (mic is None):
@@ -356,13 +360,15 @@ def ui_full(launch_kwargs):
                     coherence_json = gr.Text(label="Coherence JSON", value="{}", interactive=True)
                     update_coherence_json = gr.Button("Update Coherence JSON")
                 with gr.Row():
+                    seed = gr.Number(label="Seed", value=-1, scale=4, precision=0, interactive=True)
+                    gr.Button('\U0001f3b2\ufe0f', scale=1).click(fn=lambda: -1, outputs=[seed], queue=False)
+                    reuse_seed = gr.Button('\u267b\ufe0f', scale=1)
                     topk = gr.Number(label="Top-k", value=250, interactive=True)
                     topp = gr.Number(label="Top-p", value=0, interactive=True)
                     temperature = gr.Number(label="Temperature", value=1.0, step=0.0001, interactive=True)
                     cfg_coef = gr.Number(label="Classifier Free Guidance", value=3.0, interactive=True)
             with gr.Column():
 #                output = gr.Video(label="Generated Music")
-                output = gr.Audio(label="Generated Music")
 #                output = gr.Video(label="Generated Music (updates every second)")#, autoplay=True)
 #                output1 = gr.Video(label="Generated Music (updates every second)")
 #                output2 = gr.Video(label="Generated Music (updates every second)")
@@ -373,14 +379,18 @@ def ui_full(launch_kwargs):
                 output1 = gr.Audio(label="Generated Music (updates)")
                 output2 = gr.Audio(label="Generated Music (updates)")
                 output3 = gr.Audio(label="Generated Music (updates)")
+                output = gr.Audio(label="Generated Music")
 #                output_audio = gr.Audio(label="Generated Music (updates every second)", autoplay=True)
 #                output1 = gr.Audio(label="Generated Music (streaming)")
 #                input1 = gr.Audio(source="microphone", type="numpy", streaming=True)
+                seed_used = gr.Number(label='Seed used', value=-1, interactive=False)
 
                 
-        submit.click(predict_full, inputs=[model, text, melody, duration, divider, pitch_shift, sampler, time_shift, max_duration, extend_stride, attention_type, coherence_json, topk, topp, temperature, cfg_coef], outputs=[output])
+        submit.click(predict_full, inputs=[model, text, melody, duration, divider, pitch_shift, sampler, time_shift, max_duration, extend_stride, attention_type, coherence_json, seed, topk, topp, temperature, cfg_coef], outputs=[output, seed_used])
 
         update_coherence_json.click(update_coherence_json_click, inputs=[attention_type, coherence_json], queue=False)
+
+        reuse_seed.click(fn=lambda x: x, inputs=[seed_used], outputs=[seed], queue=False)
         
 #        output_audio = interface.load(check_audio_tmp, None, outputs=[output_audio], every=1)
 #        input1.stream(audio_stream, inputs=[input1], outputs=[output1])
@@ -393,9 +403,9 @@ def ui_full(launch_kwargs):
         if time1start is None:
           time1start = time.time()
 
-        output1 = interface.load(check_audio_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="(sampler) => {var time1start = "+str(time1start*1000)+"; function playAudio1(){ var audioList = document.getElementsByTagName('audio'); if((audioList.length==sampler)&&(document.getElementsByTagName('video').length==0)) audioList[0].play(); var time1now = Date.now(); var frame_time1 = parseInt(document.getElementById('divider').querySelector('input').value*sampler*1000); var next_time1 = frame_time1-((time1now-time1start)%frame_time1); setTimeout(() => { playAudio1() }, next_time1) }; setTimeout(() => { playAudio1() }, 1000*0*document.getElementById('divider').querySelector('input').value) }")
-        output2 = interface.load(check_audio_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="(sampler) => {var time2start = "+str(time1start*1000)+"; function playAudio2(){ var audioList = document.getElementsByTagName('audio'); if((audioList.length==sampler)&&(document.getElementsByTagName('video').length==0)) audioList[1].play(); var time2now = Date.now(); var frame_time2 = parseInt(document.getElementById('divider').querySelector('input').value*sampler*1000); var next_time2 = frame_time2-((time2now-(time2start+1000*1*document.getElementById('divider').querySelector('input').value))%frame_time2); setTimeout(() => { playAudio2() }, next_time2) }; setTimeout(() => { playAudio2() }, 1000*1*document.getElementById('divider').querySelector('input').value) }")
-        output3 = interface.load(check_audio_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="(sampler) => {var time3start = "+str(time1start*1000)+"; function playAudio3(){ var audioList = document.getElementsByTagName('audio'); if((audioList.length==sampler)&&(document.getElementsByTagName('video').length==0)) audioList[2].play(); var time3now = Date.now(); var frame_time3 = parseInt(document.getElementById('divider').querySelector('input').value*sampler*1000); var next_time3 = frame_time3-((time3now-(time3start+1000*2*document.getElementById('divider').querySelector('input').value))%frame_time3); setTimeout(() => { playAudio3() }, next_time3) }; setTimeout(() => { playAudio3() }, 1000*2*document.getElementById('divider').querySelector('input').value) }")
+        output1 = interface.load(check_audio_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="(sampler) => {var time1start = "+str(time1start*1000)+"; function playAudio1(){ var audioList = document.getElementsByTagName('audio'); var progress_levelList = document.getElementsByClassName('progress-level'); if((audioList.length>=sampler)&&(progress_levelList.length>0)) audioList[0].play(); var time1now = Date.now(); var frame_time1 = parseInt(document.getElementById('divider').querySelector('input').value*sampler*1000); var next_time1 = frame_time1-((time1now-time1start)%frame_time1); setTimeout(() => { playAudio1() }, next_time1) }; setTimeout(() => { playAudio1() }, 1000*0*document.getElementById('divider').querySelector('input').value) }")
+        output2 = interface.load(check_audio_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="(sampler) => {var time2start = "+str(time1start*1000)+"; function playAudio2(){ var audioList = document.getElementsByTagName('audio'); var progress_levelList = document.getElementsByClassName('progress-level'); if((audioList.length>=sampler)&&(progress_levelList.length>0)) audioList[1].play(); var time2now = Date.now(); var frame_time2 = parseInt(document.getElementById('divider').querySelector('input').value*sampler*1000); var next_time2 = frame_time2-((time2now-(time2start+1000*1*document.getElementById('divider').querySelector('input').value))%frame_time2); setTimeout(() => { playAudio2() }, next_time2) }; setTimeout(() => { playAudio2() }, 1000*1*document.getElementById('divider').querySelector('input').value) }")
+        output3 = interface.load(check_audio_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="(sampler) => {var time3start = "+str(time1start*1000)+"; function playAudio3(){ var audioList = document.getElementsByTagName('audio'); var progress_levelList = document.getElementsByClassName('progress-level'); if((audioList.length>=sampler)&&(progress_levelList.length>0)) audioList[2].play(); var time3now = Date.now(); var frame_time3 = parseInt(document.getElementById('divider').querySelector('input').value*sampler*1000); var next_time3 = frame_time3-((time3now-(time3start+1000*2*document.getElementById('divider').querySelector('input').value))%frame_time3); setTimeout(() => { playAudio3() }, next_time3) }; setTimeout(() => { playAudio3() }, 1000*2*document.getElementById('divider').querySelector('input').value) }")
 #        output1 = interface.load(check_tmp1, inputs=[sampler], outputs=[output1], every=0.05, _js="() => {var time1start = "+str(time1start*1000)+"; function playAudio1(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[0].play(); var time1now = Date.now(); var frame_time1 = parseInt(document.getElementById('divider').querySelector('input').value*3000); var next_time1 = frame_time1-((time1now-time1start)%frame_time1); console.log(Date.now()); setTimeout(() => { playAudio1() }, next_time1) }; setTimeout(() => { playAudio1() }, 1000*0*document.getElementById('divider').querySelector('input').value) }")
 #        output2 = interface.load(check_tmp2, inputs=[sampler], outputs=[output2], every=0.05, _js="() => {var time2start = "+str(time1start*1000)+"+1000*1*document.getElementById('divider').querySelector('input').value; function playAudio2(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[1].play(); var time2now = Date.now(); var frame_time2 = parseInt(document.getElementById('divider').querySelector('input').value*3000); var next_time2 = frame_time2-((time2now-time2start)%frame_time2); console.log(Date.now()); setTimeout(() => { playAudio2() }, next_time2) }; setTimeout(() => { playAudio2() }, 1000*1*document.getElementById('divider').querySelector('input').value) }")
 #        output3 = interface.load(check_tmp3, inputs=[sampler], outputs=[output3], every=0.05, _js="() => {var time3start = "+str(time1start*1000)+"+1000*2*document.getElementById('divider').querySelector('input').value; function playAudio3(){ var videoList = document.getElementsByTagName('video'); if(videoList.length==3) videoList[2].play(); var time3now = Date.now(); var frame_time3 = parseInt(document.getElementById('divider').querySelector('input').value*3000); var next_time3 = frame_time3-((time3now-time3start)%frame_time3); console.log(Date.now()); setTimeout(() => { playAudio3() }, next_time3) }; setTimeout(() => { playAudio3() }, 1000*2*document.getElementById('divider').querySelector('input').value) }")
