@@ -17,6 +17,8 @@ x = torch.nn.functional.scaled_dot_product_attention(
                         q, k, v, attn_mask, dropout_p=p)
 ```
 
+here example of music with poetry, where electroencephalography coherence sent as attention mask to both musicgen and text generation transformers as streaming, for neurofeedback: https://drive.google.com/file/d/1CP3KXWBQ69m_MWdVgouhqEu6sSZow8cu/view?usp=drive_link
+
 # Audiocraft
 ![docs badge](https://github.com/facebookresearch/audiocraft/workflows/audiocraft_docs/badge.svg)
 ![linter badge](https://github.com/facebookresearch/audiocraft/workflows/audiocraft_linter/badge.svg)
